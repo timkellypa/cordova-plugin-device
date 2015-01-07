@@ -29,6 +29,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.provider.Settings;
+import android.content.res.Resources;
 
 public class Device extends CordovaPlugin {
     public static final String TAG = "Device";
@@ -73,6 +74,8 @@ public class Device extends CordovaPlugin {
             r.put("version", this.getOSVersion());
             r.put("platform", this.getPlatform());
             r.put("model", this.getModel());
+			r.put("xdpi", this.getXDPI());
+			r.put("ydpi", this.getYDPI());
             callbackContext.success(r);
         }
         else {
@@ -152,5 +155,13 @@ public class Device extends CordovaPlugin {
         }
         return false;
     }
+
+	public float getXDPI() {
+		return Resources.getSystem().getDisplayMetrics().densityDpi;
+	}
+
+	public float getYDPI() {
+		return Resources.getSystem().getDisplayMetrics().densityDpi;
+	}
 
 }

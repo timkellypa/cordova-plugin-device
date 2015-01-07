@@ -44,8 +44,83 @@ function Device() {
 
     var me = this;
 
-    channel.onCordovaReady.subscribe(function() {
-        me.getInfo(function(info) {
+    var DPIByModelIOS = {
+        // iPhone
+        "iPhone1,default": 163,
+        "iPhone2,default": 163,
+        "iPhone3,default": 163,
+        "iPhone4,default": 326,
+        "iPhone4,default": 326,
+        "iPhone5,default": 326,
+        "iPhone6,default": 326,
+        "iPhone7,1": 401,
+        "iPhone7,2": 326,
+        "iPhone7,default": 326,
+
+        // iPod
+        "iPod1,default": 163,
+        "iPod2,default": 163,
+        "iPod3,default": 163,
+        "iPod4,default": 326,
+        "iPod5,default": 326,
+
+        // iPad
+        "iPad1,default": 132,
+        "iPad2,default": 132,
+        "iPad3,default": 264,
+        "iPad4,default": 264,
+        "iPad5,default": 264,
+
+        // iPad Mini
+        "iPad2,5": 163,
+        "iPad2,6": 163,
+        "iPad2,7": 163,
+        "iPad4,4": 326,
+        "iPad4,5": 326,
+        "iPad4,6": 326,
+        "iPad4,7": 326,
+        "iPad4,8": 326,
+        "iPad4,9": 326,
+
+        // 326 is a safe guess if we don't know the device and it is iOS, I suppose.
+        "default": 326
+    };
+
+    getIOSDPI = function (info) {
+        if (typeof (DPIByModelIOS[info.model]) !== "undefined")
+            return DPIByModelIOS[info.model];
+        else if (typeof (DPIByModelIOS[info.model.split(",")[0] + ",default"]) !== "undefined")
+            return DPIByModelIOS[info.model.split(",")[0] + ",default"];
+        else
+            return DPIByModelIOS["default"];
+    }
+
+    /**
+     * Get DPI from our available device info.
+     *  Specifics:
+     *      - Android:  Will return xdpi and ydpi, based on native calculation.
+     *      - iOS:  Will return value from key-value pair of model struct (above).
+     *      - Else:  Will return 96, normal browser CSS pixel per inch.
+     */
+    var getDPI = function (info) {
+        var x = "";
+
+        // Special case, iOS.  Figure out the dpi by trying our case statements/defaults.
+        //      No need to use native module, because it is essentially a list based on model number.
+        if (info.platform === "iOS") {
+            info.dpi = getIOSDPI(info);
+        }
+
+        if (info.xdpi && info.ydpi)
+            return { xdpi: info.xdpi, ydpi: info.ydpi };
+        else if (info.dpi)
+            return { xdpi: info.dpi, ydpi: info.dpi };
+        else
+            return { xdpi: 96, ydpi: 96 };
+    };
+
+    channel.onCordovaReady.subscribe(function () {
+        me.getInfo(function (info) {
             //ignoring info.cordova returning from native, we should use value from cordova.version defined in cordova.js
             //TODO: CB-5105 native implementations should not return info.cordova
             var buildLabel = cordova.version;
@@ -55,8 +130,13 @@ function Device() {
             me.uuid = info.uuid;
             me.cordova = buildLabel;
             me.model = info.model;
+
+            var dpi = getDPI(info);
+            me.xdpi = dpi.xdpi;
+            me.ydpi = dpi.ydpi;
+
             channel.onCordovaInfoReady.fire();
-        },function(e) {
+        }, function (e) {
             me.available = false;
             utils.alert("[ERROR] Error initializing Cordova: " + e);
         });
@@ -69,7 +149,7 @@ function Device() {
  * @param {Function} successCallback The function to call when the heading data is available
  * @param {Function} errorCallback The function to call when there is an error getting the heading data. (OPTIONAL)
  */
-Device.prototype.getInfo = function(successCallback, errorCallback) {
+Device.prototype.getInfo = function (successCallback, errorCallback) {
     argscheck.checkArgs('fF', 'Device.getInfo', arguments);
     exec(successCallback, errorCallback, "Device", "getDeviceInfo", []);
 };
